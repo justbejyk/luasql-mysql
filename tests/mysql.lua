@@ -7,13 +7,15 @@ QUERYING_STRING_TYPE_NAME = "binary(65535)"
 
 table.insert (CUR_METHODS, "numrows")
 table.insert (EXTENSIONS, numrows)
+table.insert (CONN_METHODS, "escape")
+table.insert (EXTENSIONS, escape)
 
 ---------------------------------------------------------------------
 -- Build SQL command to create the test table.
 ---------------------------------------------------------------------
 local _define_table = define_table
 function define_table (n)
-	return _define_table(n) .. " TYPE = InnoDB;"
+	return _define_table(n) .. " ENGINE = InnoDB;"
 end
 
 ---------------------------------------------------------------------

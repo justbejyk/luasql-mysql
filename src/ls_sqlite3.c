@@ -126,7 +126,12 @@ static int finalize(lua_State *L, cur_data *cur) {
 static void push_column(lua_State *L, sqlite3_stmt *vm, int column) {
   switch (sqlite3_column_type(vm, column)) {
   case SQLITE_INTEGER:
+#if LUA_VERSION_NUM >= 503
     lua_pushinteger(L, sqlite3_column_int64(vm, column));
+#else
+    // Preserves precision of integers up to 2^53.
+    lua_pushnumber(L, sqlite3_column_int64(vm, column));
+#endif
     break;
   case SQLITE_FLOAT:
     lua_pushnumber(L, sqlite3_column_double(vm, column));
@@ -382,7 +387,11 @@ static int conn_execute(lua_State *L)
   int numcols;
   const char *tail;
 
+#if SQLITE_VERSION_NUMBER > 3006013
+  res = sqlite3_prepare_v2(conn->sql_conn, statement, -1, &vm, &tail);
+#else
   res = sqlite3_prepare(conn->sql_conn, statement, -1, &vm, &tail);
+#endif
   if (res != SQLITE_OK)
     {
       errmsg = sqlite3_errmsg(conn->sql_conn);
@@ -489,7 +498,7 @@ static int conn_setautocommit(lua_State *L)
     {
       conn->auto_commit = 1;
       /* undo active transaction - ignore errors */
-      sqlite3_exec(conn->sql_conn, "ROLLBACK", NULL, NULL, NULL);
+      (void) sqlite3_exec(conn->sql_conn, "ROLLBACK", NULL, NULL, NULL);
     }
   else
     {
@@ -544,7 +553,18 @@ static int env_connect(lua_State *L)
 
   sourcename = luaL_checkstring(L, 2);
 
+#if SQLITE_VERSION_NUMBER > 3006013
+  if (strstr(sourcename, ":memory:")) /* TODO: rework this and get/add param 'flag' for sqlite3_open_v2 - see TODO below */
+  {
+	  res = sqlite3_open_v2(sourcename, &conn, SQLITE_OPEN_READWRITE | SQLITE_OPEN_MEMORY, NULL);
+  }
+  else
+  {
+	  res = sqlite3_open_v2(sourcename, &conn, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL);
+  }
+#else
   res = sqlite3_open(sourcename, &conn);
+#endif
   if (res != SQLITE_OK)
     {
       errmsg = sqlite3_errmsg(conn);
@@ -665,5 +685,8 @@ LUASQL_API int luaopen_luasql_sqlite3(lua_State *L)
   lua_newtable (L);
   luaL_setfuncs (L, driver, 0);
   luasql_set_info (L);
+  lua_pushliteral (L, "_CLIENTVERSION");
+  lua_pushliteral (L, SQLITE_VERSION);
+  lua_settable (L, -3);
   return 1;
 }

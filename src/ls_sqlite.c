@@ -448,7 +448,7 @@ static int conn_setautocommit(lua_State *L)
     {
 		conn->auto_commit = 1;
         /* undo active transaction - ignore errors */
-        sqlite_exec(conn->sql_conn, "ROLLBACK", NULL, NULL, NULL);
+        (void) sqlite_exec(conn->sql_conn, "ROLLBACK", NULL, NULL, NULL);
 	}
 	else
     {
@@ -621,5 +621,8 @@ LUASQL_API int luaopen_luasql_sqlite(lua_State *L)
 	lua_newtable (L);
 	luaL_setfuncs (L, driver, 0);
 	luasql_set_info (L);
+	lua_pushliteral (L, "_CLIENTVERSION");
+	lua_pushliteral (L, SQLITE_VERSION);
+	lua_settable (L, -3);
 	return 1;
 }

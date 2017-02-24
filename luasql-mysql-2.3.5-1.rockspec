@@ -1,16 +1,16 @@
 -- This file was automatically generated for the LuaDist project.
 
-package = "LuaSQL-MySQL"
-version = "2.3.0-1"
+package = "luasql-mysql"
+version = "2.3.5-1"
 -- LuaDist source
 source = {
-  tag = "2.3.0-1",
+  tag = "2.3.5-1",
   url = "git://github.com/LuaDist2/luasql-mysql.git"
 }
 -- Original source
 -- source = {
 --   url = "git://github.com/keplerproject/luasql.git",
---   branch = "v2.3.0",
+--   branch = "v2.3.5",
 -- }
 description = {
    summary = "Database connectivity for Lua (MySQL driver)",

@@ -183,7 +183,7 @@ static void create_colinfo (lua_State *L, cur_data *cur) {
 /*
 ** Closes the cursos and nullify all structure fields.
 */
-static int cur_nullify (lua_State *L, cur_data *cur) {
+static void cur_nullify (lua_State *L, cur_data *cur) {
 	/* Nullify structure fields. */
 	cur->closed = 1;
 	mysql_free_result(cur->my_res);
@@ -316,7 +316,7 @@ static int cur_getcoltypes (lua_State *L) {
 ** Push the number of rows.
 */
 static int cur_numrows (lua_State *L) {
-	lua_pushnumber (L, (lua_Number)mysql_num_rows (getcursor(L)->my_res));
+	lua_pushinteger (L, (lua_Number)mysql_num_rows (getcursor(L)->my_res));
 	return 1;
 }
 
@@ -409,7 +409,7 @@ static int conn_execute (lua_State *L) {
 		else { /* mysql_use_result() returned nothing; should it have? */
 			if(num_cols == 0) { /* no tuples returned */
             	/* query does not return data (it was not a SELECT) */
-				lua_pushnumber(L, mysql_affected_rows(conn->my_conn));
+				lua_pushinteger(L, mysql_affected_rows(conn->my_conn));
 				return 1;
         	}
 			else /* mysql_use_result() should have returned data */
@@ -460,7 +460,7 @@ static int conn_setautocommit (lua_State *L) {
 */
 static int conn_getlastautoid (lua_State *L) {
   conn_data *conn = getconnection(L);
-  lua_pushnumber(L, mysql_insert_id(conn->my_conn));
+  lua_pushinteger(L, mysql_insert_id(conn->my_conn));
   return 1;
 }
 
@@ -491,7 +491,7 @@ static int env_connect (lua_State *L) {
 	const char *username = luaL_optstring(L, 3, NULL);
 	const char *password = luaL_optstring(L, 4, NULL);
 	const char *host = luaL_optstring(L, 5, NULL);
-	const int port = luaL_optint(L, 6, 0);
+	const int port = luaL_optinteger(L, 6, 0);
 	MYSQL *conn;
 	getenvironment(L); /* validade environment */
 
@@ -532,6 +532,7 @@ static int env_close (lua_State *L) {
 		lua_pushboolean (L, 0);
 		return 1;
 	}
+	mysql_library_end();
 	env->closed = 1;
 	lua_pushboolean (L, 1);
 	return 1;
@@ -601,7 +602,7 @@ LUASQL_API int luaopen_luasql_mysql (lua_State *L) {
 	lua_newtable(L);
 	luaL_setfuncs(L, driver, 0);
 	luasql_set_info (L);
-    lua_pushliteral (L, "_MYSQLVERSION");
+    lua_pushliteral (L, "_CLIENTVERSION");
     lua_pushliteral (L, MYSQL_SERVER_VERSION);
     lua_settable (L, -3);
 	return 1;

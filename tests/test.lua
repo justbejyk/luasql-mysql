@@ -497,8 +497,18 @@ end
 -- Escaping strings
 ---------------------------------------------------------------------
 function escape ()
-        local escaped = CONN:escape"a'b'c'd"
+	local escaped = CONN:escape"a'b'c'd"
 	assert ("a\\'b\\'c\\'d" == escaped or "a''b''c''d" == escaped)
+
+	local n = 5200
+	local s1 = string.rep("'", n)
+	local s2 = CONN:escape(s1)
+	local s3 = s1:gsub ("'", "\\'")
+	assert (s1:len() == n)
+	assert (s2:len() == 2*n)
+	assert (s2 == s1..s1 or s2 == s3)
+
+	io.write (" escape")
 end
 
 ---------------------------------------------------------------------
@@ -614,9 +624,6 @@ if type(arg[1]) ~= "string" then
 end
 
 driver = arg[1]
-datasource = arg[2] or "luasql-test"
-username = arg[3] or nil
-password = arg[4] or nil
 
 -- Loading driver specific functions
 if arg[0] then
@@ -635,6 +642,10 @@ if arg[0] then
 	end
 end
 
+datasource = arg[2] or DEFAULT_TEST_DATABASE or "luasql-test"
+username = arg[3] or DEFAULT_USERNAME or nil
+password = arg[4] or DEFAULT_PASSWORD or nil
+
 -- Complete set of tests
 tests = {
 	{ "basic checking", basic_test },
@@ -644,7 +655,6 @@ tests = {
 	{ "fetch many", fetch_many },
 	{ "rollback", rollback },
 	{ "get column information", column_info },
-	{ "escape", escape },
 	{ "extensions", extensions_test },
 	{ "close objects", check_close },
 	{ "drop table", drop_table },
@@ -652,12 +662,21 @@ tests = {
 }
 
 if string.find(_VERSION, " 5.0") then
-	luasql = assert(loadlib("./"..driver..".so", "luaopen_luasql_"..driver))()
+	local init_so, err = loadlib("./"..driver..".so", "luaopen_luasql_"..driver)
+	if init_so then
+		luasql = init_so()
+	else
+		luasql = assert(loadlib("/usr/local/lib/lua/5.0/luasql/"..driver..".so", "luaopen_luasql_"..driver))()
+	end
 else
 	luasql = require ("luasql."..driver)
 end
 assert (luasql, "Could not load driver: no luasql table.")
-io.write (luasql._VERSION.." "..driver.." driver test.  "..luasql._COPYRIGHT.."\n")
+io.write (luasql._VERSION.." "..driver)
+if luasql._CLIENTVERSION then
+	io.write (" ("..luasql._CLIENTVERSION..")")
+end
+io.write (" driver test.  "..luasql._COPYRIGHT.."\n")
 
 for i = 1, table.getn (tests) do
 	local t = tests[i]
